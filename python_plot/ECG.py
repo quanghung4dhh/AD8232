@@ -1,0 +1,91 @@
+import serial
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from collections import deque
+import threading
+
+# --- CẤU HÌNH ---
+SERIAL_PORT = 'COM3' 
+BAUD_RATE = 115200
+
+# Số lượng điểm dữ liệu hiển thị trên màn hình (cửa sổ trượt)
+MAX_DATA_POINTS = 500 
+
+# --- KHỞI TẠO DỮ LIỆU ---
+# Deque là một danh sách hàng đợi, tự động đẩy dữ liệu cũ ra khi đầy
+# Giúp tạo hiệu ứng cuộn (scrolling)
+data_buffer = deque([0] * MAX_DATA_POINTS, maxlen=MAX_DATA_POINTS)
+
+# Biến cờ để kiểm soát luồng đọc dữ liệu
+is_running = True
+
+# --- THIẾT LẬP KẾT NỐI SERIAL ---
+try:
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+    print(f"Đã kết nối thành công tới {SERIAL_PORT}")
+    # Xóa bộ đệm ban đầu để tránh dữ liệu rác
+    ser.reset_input_buffer()
+except serial.SerialException:
+    print(f"LỖI: Không thể mở cổng {SERIAL_PORT}. Hãy kiểm tra lại dây cáp hoặc tắt Serial Monitor khác.")
+    exit()
+
+# --- HÀM ĐỌC DỮ LIỆU (Chạy luồng riêng) ---
+def read_serial_data():
+    global is_running
+    while is_running:
+        try:
+            # Đọc một dòng dữ liệu từ ESP32
+            line = ser.readline().decode('utf-8').strip()
+            
+            # Chỉ xử lý nếu dòng có dữ liệu
+            if line:
+                try:
+                    # Chuyển đổi sang số nguyên (0-4095)
+                    val = int(line)
+                    
+                    # Thêm vào hàng đợi (dữ liệu cũ nhất sẽ tự mất)
+                    data_buffer.append(val)
+                    
+                except ValueError:
+                    # Bỏ qua nếu nhận được ký tự lạ (ví dụ '!' khi tuột dây)
+                    pass
+        except Exception as e:
+            print(f"Lỗi đọc Serial: {e}")
+            break
+
+# --- HÀM CẬP NHẬT ĐỒ THỊ ---
+def update_plot(frame):
+    line.set_ydata(data_buffer)
+    return line,
+
+# --- THIẾT LẬP ĐỒ THỊ MATPLOTLIB ---
+fig, ax = plt.subplots()
+ax.set_title(f'Tín hiệu ECG từ AD8232')
+ax.set_xlabel('Mẫu (Sample)')
+ax.set_ylabel('Biên độ (ADC Value)')
+
+# Cố định trục Y từ 0 đến 4095 (độ phân giải ESP32)
+# Bạn có thể thu hẹp lại (vd: 1000 - 3000) để nhìn sóng rõ hơn nếu cần
+ax.set_ylim(0, 4095) 
+ax.set_xlim(0, MAX_DATA_POINTS)
+ax.grid(True, linestyle='--', alpha=0.5)
+
+# Tạo đường vẽ
+line, = ax.plot(list(range(MAX_DATA_POINTS)), data_buffer, color='red', linewidth=1.2)
+
+# Bắt đầu luồng đọc dữ liệu nền
+thread = threading.Thread(target=read_serial_data)
+thread.daemon = True # Tự tắt khi chương trình chính tắt
+thread.start()
+
+# Bắt đầu Animation
+# interval=20ms nghĩa là vẽ lại màn hình 50 lần/giây
+ani = animation.FuncAnimation(fig, update_plot, interval=20, blit=True, cache_frame_data=False)
+
+print("Đang vẽ đồ thị... Nhấn đóng cửa sổ để thoát.")
+plt.show()
+
+# Khi tắt cửa sổ đồ thị, dọn dẹp kết nối
+is_running = False
+ser.close()
+print("Đã ngắt kết nối.")
