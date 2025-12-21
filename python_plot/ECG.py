@@ -5,6 +5,7 @@ from collections import deque
 import threading
 from Notch import RealTimeNotchFilter
 from Bandpass import RealTimeBandpassFilter
+from SGS import RealTimeSmoother
 
 # --- CẤU HÌNH ---
 SERIAL_PORT = 'COM3' 
@@ -22,6 +23,9 @@ data_buffer = deque([0] * MAX_DATA_POINTS, maxlen=MAX_DATA_POINTS)
 bandpassFilterECG = RealTimeBandpassFilter(
         lowcut=0.5, highcut=40, fs=100, order=2)
 notch_filter = RealTimeNotchFilter(fs=100.0, freq=50.0, Q=30.0)
+
+# Khởi tạo bộ làm mượt
+smoother = RealTimeSmoother(window_length=9, polyorder=2, mode='mirror')
 
 # Biến cờ để kiểm soát luồng đọc dữ liệu
 is_running = True
@@ -57,7 +61,7 @@ def read_serial_data():
                     filtered_ecg = bandpassFilterECG.filter(notch_val)
                     
                     # Thêm vào hàng đợi (dữ liệu cũ nhất sẽ tự mất)
-                    data_buffer.append(filtered_ecg)
+                    data_buffer.append(2*filtered_ecg)
                     
                 except ValueError:
                     # Bỏ qua nếu nhận được ký tự lạ (ví dụ '!' khi tuột dây)
@@ -68,7 +72,9 @@ def read_serial_data():
 
 # --- HÀM CẬP NHẬT ĐỒ THỊ ---
 def update_plot(frame):
-    line.set_ydata(data_buffer)
+    current_data = list(data_buffer)
+    smoothed_data = smoother.apply(current_data)
+    line.set_ydata(smoothed_data)
     return line,
 
 # --- THIẾT LẬP ĐỒ THỊ MATPLOTLIB ---
