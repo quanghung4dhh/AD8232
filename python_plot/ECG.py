@@ -60,9 +60,9 @@ def update_plot(frame):
 
 # --- THIẾT LẬP ĐỒ THỊ MATPLOTLIB ---
 fig, ax = plt.subplots()
-ax.set_title(f'Tín hiệu ECG từ AD8232')
-ax.set_xlabel('Mẫu (Sample)')
-ax.set_ylabel('Biên độ (ADC Value)')
+ax.set_title(f'Raw ECG')
+ax.set_xlabel('Sample')
+ax.set_ylabel('ADC Value')
 
 # Cố định trục Y từ 0 đến 4095 (độ phân giải ESP32)
 # Bạn có thể thu hẹp lại (vd: 1000 - 3000) để nhìn sóng rõ hơn nếu cần
