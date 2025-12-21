@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from collections import deque
 import threading
+from Notch import RealTimeNotchFilter
+from Bandpass import RealTimeBandpassFilter
 
 # --- CẤU HÌNH ---
 SERIAL_PORT = 'COM3' 
@@ -15,6 +17,11 @@ MAX_DATA_POINTS = 500
 # Deque là một danh sách hàng đợi, tự động đẩy dữ liệu cũ ra khi đầy
 # Giúp tạo hiệu ứng cuộn (scrolling)
 data_buffer = deque([0] * MAX_DATA_POINTS, maxlen=MAX_DATA_POINTS)
+
+# Khởi tạo bộ lọc
+bandpassFilterECG = RealTimeBandpassFilter(
+        lowcut=0.5, highcut=40, fs=100, order=2)
+notch_filter = RealTimeNotchFilter(fs=100.0, freq=50.0, Q=30.0)
 
 # Biến cờ để kiểm soát luồng đọc dữ liệu
 is_running = True
@@ -42,9 +49,15 @@ def read_serial_data():
                 try:
                     # Chuyển đổi sang số nguyên (0-4095)
                     val = int(line)
+
+                    #Notch
+                    notch_val = notch_filter.process_sample(val)
+
+                    #Bandpass
+                    filtered_ecg = bandpassFilterECG.filter(notch_val)
                     
                     # Thêm vào hàng đợi (dữ liệu cũ nhất sẽ tự mất)
-                    data_buffer.append(val)
+                    data_buffer.append(filtered_ecg)
                     
                 except ValueError:
                     # Bỏ qua nếu nhận được ký tự lạ (ví dụ '!' khi tuột dây)
@@ -66,7 +79,7 @@ ax.set_ylabel('ADC Value')
 
 # Cố định trục Y từ 0 đến 4095 (độ phân giải ESP32)
 # Bạn có thể thu hẹp lại (vd: 1000 - 3000) để nhìn sóng rõ hơn nếu cần
-ax.set_ylim(0, 4095) 
+ax.set_ylim(-4095, 4095) 
 ax.set_xlim(0, MAX_DATA_POINTS)
 ax.grid(True, linestyle='--', alpha=0.5)
 

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-const int pinLO_Plus = 16;  // Nối với chân LO+ của AD8232
-const int pinLO_Minus = 17; // Nối với chân LO- của AD8232
+const int pinLO_Plus = 18;  // Nối với chân LO+ của AD8232
+const int pinLO_Minus = 19; // Nối với chân LO- của AD8232
 const int pinOutput = 36;   // Nối với chân OUTPUT (VP/A0)
 
 void setup() {
@@ -32,5 +32,5 @@ void loop() {
     
        Serial.println(sensorValue); // In ra tín hiệu để vẽ đồ thị
     }
-  delay(10);
+  delay(100);
 }

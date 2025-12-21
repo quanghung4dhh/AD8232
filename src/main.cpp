@@ -1,9 +1,9 @@
 #include <Arduino.h>
 
-// --- CẬP NHẬT ĐỊNH NGHĨA CHÂN MỚI ---
-const int PIN_ADC_INPUT = 34; // Vẫn giữ GPIO 34 (Analog ADC1_CH6)
-const int PIN_LO_PLUS   = 18; // Đổi sang GPIO 18
-const int PIN_LO_MINUS  = 19; // Đổi sang GPIO 19
+// --- ĐỊNH NGHĨA CHÂN ---
+const int PIN_ADC_INPUT = 36; // GPIO 36
+const int PIN_LO_PLUS   = 18; // GPIO 18
+const int PIN_LO_MINUS  = 19; // GPIO 19
 
 void setup() {
   // Bật Serial tốc độ cao
