@@ -15,3 +15,5 @@ python ECG.py
 ```
 ## Nạp code
 Trước khi nạp code cho ESP32, nếu sử dụng các chân khác thì phải thay đổi các định nghĩa chân trong src/main.cpp
+
+# Quên ignore __pycache__ nhưng mà lười quá nên tự xóa đi nha :D
